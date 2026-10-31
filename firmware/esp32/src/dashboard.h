@@ -1,0 +1,22 @@
+#pragma once
+#include <Arduino.h>
+const char DASHBOARD[] PROGMEM = R"HTML(<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UWB 跟随车 · 控制台</title>
+<style>
+:root{color-scheme:dark;font:15px system-ui;background:#101820;color:#e9eef2}body{max-width:1050px;margin:auto;padding:32px 20px}header{border-bottom:1px solid #34434f;padding-bottom:22px}h1{font-size:26px;margin:8px 0}small,.muted{color:#a7b6c3}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px;margin:24px 0}section{background:#18242e;border:1px solid #34434f;border-radius:10px;padding:20px}h2{font-size:17px;margin:0 0 18px}dl{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0}dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}dt{color:#a7b6c3}button,input{font:inherit;padding:10px;border:1px solid #607588;border-radius:5px;background:#203342;color:inherit}button{cursor:pointer;margin:8px 8px 8px 0}button.primary{background:#267a6b}button.stop{background:#a03c38}input{width:calc(100% - 24px);margin:5px 0 12px}a{color:#83ccdf}#message{min-height:22px;color:#e8cb86}.state{font-size:25px;display:block;margin:10px 0}code{color:#8dd9c7}footer{line-height:1.8}label{display:block}button:focus-visible,input:focus-visible{outline:3px solid #8dd9c7}#connection{float:right}
+</style>
+<header><small id="connection">正在连接</small><small>SYSTEM CONSOLE / V0.1</small><h1>UWB 智能跟随四轮车</h1><span class="muted">目标观测 · 运行控制 · 电驱诊断</span></header>
+<main><section><h2>运行状态</h2><strong id="state" class="state">—</strong><dl><dt>运动使能</dt><dd id="armed">—</dd><dt>测量年龄</dt><dd id="age">—</dd><dt>控制间隔</dt><dd id="interval">—</dd><dt>电驱配置</dt><dd id="driver">—</dd></dl></section>
+<section><h2>目标数据</h2><dl><dt>原始距离</dt><dd id="raw_d">—</dd><dt>原始角度</dt><dd id="raw_a">—</dd><dt>滤波距离</dt><dd id="filtered_d">—</dd><dt>滤波角度</dt><dd id="filtered_a">—</dd><dt>有效测量</dt><dd id="accepted">—</dd><dt>拒绝测量</dt><dd id="rejected">—</dd><dt>最近拒绝原因</dt><dd id="reject_reason">—</dd></dl></section>
+<section><h2>控制输出</h2><dl><dt>期望前进速度</dt><dd id="forward">—</dd><dt>期望转向角速度</dt><dd id="yaw">—</dd><dt>左轮下发指令</dt><dd id="left">—</dd><dt>右轮下发指令</dt><dd id="right">—</dd><dt>串口发送帧数</dt><dd id="packets">—</dd></dl><p class="muted">轮速为逻辑下发值；当前适配器未采集电机反馈。</p></section>
+<section><h2>操作与参数</h2><label for="token">控制令牌</label><input id="token" type="password" autocomplete="off" placeholder="仅用于本次操作，不保存在浏览器">
+<button class="primary" onclick="control('arm')">启动跟随</button><button class="stop" onclick="control('stop')">停止</button>
+<label for="distance">目标距离 / cm（停车时设置）</label><input id="distance" type="number" min="40" max="1000" value="120"><button onclick="distance()">应用并保存</button><p id="message" role="status"></p><a href="/api/log.csv" download>下载最近运行日志 CSV</a></section></main>
+<footer class="muted">坐标：沿车头方向看，左正右负。上电和 OTA 后保持停止，需主动使能。<br>四轮差速底盘 · 纯 UWB 跟随 · 网络参数由本地配置管理</footer>
+<script>
+const el=id=>document.getElementById(id),put=(id,value)=>el(id).textContent=value;
+async function request(path,body){try{const response=await fetch(path,{method:'POST',headers:{'X-Control-Token':el('token').value,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)});const result=await response.json();put('message',result.message)}catch(e){put('message','操作未确认，请检查连接')}}
+function control(action){return request('/api/control',{action})}function distance(){return request('/api/params',{target_distance_cm:el('distance').value})}
+async function refresh(){try{const response=await fetch('/api/status',{cache:'no-store'});if(!response.ok)throw Error();const s=await response.json();put('connection','在线');put('state',s.state);put('armed',s.armed?'已使能':'停止');put('age',s.measurement_age_ms===null?'无测量':s.measurement_age_ms+' ms');put('interval',s.control_interval_ms+' ms');put('driver',s.driver_ready?'就绪':'配置错误');for(const [id,key,unit]of [['raw_d','raw_distance_cm',' cm'],['raw_a','raw_angle_deg',' °'],['filtered_d','filtered_distance_cm',' cm'],['filtered_a','filtered_angle_deg',' °'],['forward','forward_cm_s',' cm/s'],['yaw','yaw_deg_s',' °/s'],['left','left_command_rpm',' rpm'],['right','right_command_rpm',' rpm']])put(id,s[key]===null?'—':s[key].toFixed(1)+unit);put('accepted',s.parse_ok);put('rejected',s.parse_rejected);put('reject_reason',s.last_reject);put('packets',s.motor_packets)}catch(e){put('connection','连接中断 · 状态可能过期')}finally{setTimeout(refresh,500)}}refresh();
+</script></html>)HTML";
