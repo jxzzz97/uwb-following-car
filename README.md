@@ -10,7 +10,7 @@
 
 ```mermaid
 flowchart LR
-  Tag[CBU5000V210 Tag 随身端] <-->|UWB| Anchor[CBU5000V210 Anchor 车载端]
+  Tag[CBU5000V210 Tag 全向单天线] <-->|UWB| Anchor[CBU5000V210 Anchor 三天线]
   Anchor -->|UART 距离与角度| Parser[测量解析与检查]
   Parser --> Filter[安装变换与目标滤波]
   Filter --> Follow[跟随控制]
@@ -83,6 +83,9 @@ powershell -ExecutionPolicy Bypass -File .\build_all.ps1
 
 ## 设计文档
 
+- [天线选型与测距测角原理](docs/天线选型与测距测角原理.md)：全向单天线 Tag、三天线 Anchor、DS-TWR、PDoA → AoA 与当前 PD12 解算。
+- [测量到电机的数据链路](docs/测量到电机的数据链路.md)：一轮无线交互、5 包统计、角度保持、串口与多层处理的分工。
+- [Kalman 滤波设计与参数整定](docs/Kalman滤波设计与参数整定.md)：为何滤波、为何当前属于 KF、状态模型、Q/R/P、NIS 与整定依据。
 - [系统架构与模块边界](docs/系统架构.md)
 - [车辆参数与底盘适配](docs/车辆参数与底盘适配.md)
 - [UWB 双端固件设计](docs/UWB双端固件设计.md)
